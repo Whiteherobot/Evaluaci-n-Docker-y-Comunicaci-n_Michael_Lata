@@ -3,6 +3,7 @@ const express = require("express");
 const http = require("http");
 const WebSocket = require("ws");
 const bodyParser = require("body-parser");
+const os = require("os");
 
 const app = express();
 app.use(bodyParser.json());
@@ -28,7 +29,6 @@ app.post("/alert", (req, res) => {
   console.log("[WS Server] Alerta recibida para difundir:", alerta);
 
   const data = JSON.stringify(alerta);
-  // Broadcast a todos los clientes conectados
   for (const client of clients) {
     if (client.readyState === WebSocket.OPEN) {
       client.send(data);
@@ -39,6 +39,35 @@ app.post("/alert", (req, res) => {
 });
 
 const PORT = 9000;
-server.listen(PORT, () => {
-  console.log(`[WS Server] WebSocket y HTTP escuchando en ws://localhost:${PORT}`);
+
+// Intentar obtener primero la IP del adaptador "Wi-Fi"
+function getLocalIp() {
+  const nets = os.networkInterfaces();
+
+  // 1) Preferimos el adaptador llamado "Wi-Fi" (así aparece en Windows en español)
+  if (nets["Wi-Fi"]) {
+    for (const net of nets["Wi-Fi"]) {
+      if (net.family === "IPv4" && !net.internal) {
+        return net.address; // En tu caso debería ser 10.139.99.40
+      }
+    }
+  }
+
+  // 2) Si no, buscamos cualquier IPv4 válida no interna
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      if (net.family === "IPv4" && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+
+  return "localhost";
+}
+
+server.listen(PORT, "0.0.0.0", () => {
+  const ip = getLocalIp();
+  console.log("[WS Server] WebSocket y HTTP escuchando en:");
+  console.log(`  ws://localhost:${PORT}`);
+  console.log(`  ws://${ip}:${PORT}  (IP para otros equipos de la red)`);
 });

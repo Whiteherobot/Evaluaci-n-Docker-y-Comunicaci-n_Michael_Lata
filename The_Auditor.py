@@ -8,21 +8,21 @@ QUEUE_NAME = "sensores_mon"
 WS_BRIDGE_URL = "http://localhost:9000/alert"  # endpoint del WS Server
 
 def clasificar_alerta(evento):
-    audit_trailx = evento.get("audit_trail")
-    power_levelx = evento.get("power_level")
-    sensor_idx = evento.get("sensor_id")
+    audit_trail = evento.get("audit_trail")
+    power_level = evento.get("power_level")
+    sensor_id = evento.get("sensor_id")
 
 
-    if power_levelx % 2 == 0:
-            power_levelx = power_levelx*2, "Se Multiplico por 2 " 
+    if power_level % 2 == 0:
+            power_level = power_level*2, "Se Multiplico por 2 " 
            
     else:
-            power_levelx = power_levelx+1,"Se sumo 1 "
+            power_level = power_level+1,"Se sumo 1 "
             
     alerta_procesada = {
-        "sensor_id": sensor_idx,
-        "power_level": power_levelx,
-        "audit_trail": audit_trailx
+        "sensor_id": sensor_id,
+        "power_level": power_level,
+        "audit_trail": audit_trail
     }
     return alerta_procesada
 

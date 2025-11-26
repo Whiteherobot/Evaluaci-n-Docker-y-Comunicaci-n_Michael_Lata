@@ -51,7 +51,7 @@ def main():
             print(f"[ENVIADO] {body}")
             time.sleep(random.uniform(0.5, 3.0))  # intervalo aleatorio
     except KeyboardInterrupt:
-        print("\nSaliendo productor...")
+        print("\n ciclo Completado")
     finally:
         conn.close()
 

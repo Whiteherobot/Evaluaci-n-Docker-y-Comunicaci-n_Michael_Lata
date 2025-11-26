@@ -14,7 +14,7 @@ def clasificar_alerta(evento):
 
 
 
-    power_levelxx = (power_levelxx * 5) , "Se resto 5 " 
+    power_levelxx = power_levelxx -5 , "Se resto 5 " 
     audit_trailxx = "B_processed"       
 
     alerta_procesada = {

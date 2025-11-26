@@ -5,4 +5,4 @@ services:
     container_name: rabbitmq
     ports:
       - "5672:5672"   # puerto para las apps
-      - "15672:15672" # UI web http://localhost:15672 (user: guest / pass: guest)
+      - "15672:15672" # UI web http://localhost:15672 

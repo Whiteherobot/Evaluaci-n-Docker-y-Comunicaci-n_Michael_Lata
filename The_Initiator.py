@@ -1,4 +1,3 @@
-# sensor_producer.py
 import pika
 import json
 import random
@@ -15,31 +14,20 @@ def conectar_rabbit():
     return connection, connection.channel()
 
 def generar_evento():
-    tipos = ["temperatura", "puerta", "movimiento", "humo", "vibracion", "alarma_manual"]
-    tipo = random.choice(tipos)
-    sensor_id = f"S-{random.randint(100, 199)}"
-    now = datetime.now(timezone.utc).isoformat()
+    audit_trail = [""]
+    audit_trail = random.choice(audit_trail)
+    sensor_id = f"{random.randint(100, 199)}"
 
-    if tipo == "temperatura":
-        valor = round(random.uniform(20, 60), 1)  # °C
-    elif tipo == "puerta":
-        valor = random.choice(["abierta", "cerrada"])
-    elif tipo == "movimiento":
-        valor = random.choice(["detectado", "no_detectado"])
-    elif tipo == "humo":
-        valor = round(random.uniform(0, 100), 1)  # %
-    elif tipo == "vibracion":
-        valor = round(random.uniform(0, 10), 2)   # g
-    elif tipo == "alarma_manual":
-        valor = random.choice(["activada", "inactiva"])
-    else:
-        valor = None
+
+    power_level = round(random.normalvariate(50, 100))
+
 
     evento = {
         "sensor_id": sensor_id,
-        "tipo": tipo,
-        "valor": valor,
-        "timestamp": now
+        "power_level": power_level,
+        "audit_trail": audit_trail
+        
+        
     }
     return evento
 
@@ -47,7 +35,7 @@ def main():
     conn, ch = conectar_rabbit()
     ch.queue_declare(queue=QUEUE_NAME, durable=True)
 
-    print("[MON-Producer] Enviando eventos de sensores... Ctrl+C para salir")
+    print("[MON-Producer] Enviando valores numericos al NODO A... Ctrl+C para salir")
     try:
         while True:
             evento = generar_evento()

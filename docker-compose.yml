@@ -1,8 +1,24 @@
-version: '3.8'
 services:
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
+  nodo-a:
+    build: .
+    command: sh -c "rm -rf __pycache__ && /usr/local/bin/python -u The_Initiator.py"
     ports:
-      - "5672:5672"   # puerto para las apps
-      - "15672:15672" # UI web http://localhost:15672 
+      - "8080:8080"
+    networks:
+      - app-network
+
+  nodo-b:
+    build: .
+    command: sh -c "rm -rf __pycache__ && /usr/local/bin/python -u The_Transformer.py"
+    networks:
+      - app-network
+
+  nodo-c:
+    build: .
+    command: sh -c "rm -rf __pycache__ && /usr/local/bin/python -u The_Auditor.py"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

@@ -1,59 +1,47 @@
-import pika
+import asyncio
+import websockets
 import json
-import requests
-import The_Initiator
 
-RABBITMQ_HOST = "localhost"
-QUEUE_NAME = "sensores_mon"
-WS_BRIDGE_URL = "http://localhost:9000/alert"  # endpoint del WS Server
+NODE_C_URI = "ws://nodo-c:8083"
+NODE_B_HOST = "0.0.0.0"
+NODE_B_PORT = 8082
 
-def clasificar_alerta(evento):
-    audit_trailxx = evento.get("audit_trail1")
-    power_levelxx = evento.get("power_level1")
-    sensor_idxx = evento.get("sensor_id1")
+async def send_to_node_c(message):
+    while True:
+        try:
+            async with websockets.connect(NODE_C_URI) as websocket:
+                print("Connection to Node C established.")
+                await websocket.send(json.dumps(message))
+                print(f"Sent to Node C: {message}")
+                return
+        except (OSError, websockets.exceptions.ConnectionClosed) as e:
+            print(f"Connection to Node C failed: {e}. Retrying in 5 seconds...")
+            await asyncio.sleep(5)
 
+async def start_node_b_server(websocket, path=None):
+    if path is None:
+        print("Node A connected to Node B.")
+    else:
+        print(f"Node A connected to Node B. Path: {path}")
+    async for message_str in websocket:
+        message = json.loads(message_str)
+        print(f"Received from Node A: {message}")
+        
+        power_level = message.get("power_level", 0)
+        
+        if power_level % 2 == 0:
+            message["power_level"] *= 2
+        else:
+            message["power_level"] += 1
+            
+        message["audit_trail"].append("B_processed")
+        
+        await send_to_node_c(message)
 
-
-    power_levelxx = power_levelxx -5 , "Se resto 5 " 
-    audit_trailxx = "B_processed"       
-
-    alerta_procesada = {
-        "sensor_idxx": sensor_idxx,
-        "power_levelxx": power_levelxx,
-        "audit_trailxx": audit_trailxx
-    }
-    return alerta_procesada
-
-def enviar_a_ws(alerta):
-    try:
-        resp = requests.post(WS_BRIDGE_URL, json=alerta, timeout=2)
-        if resp.status_code != 200:
-            print(f"[MON-Processor] Error enviando a WS Server: {resp.status_code} {resp.text}")
-    except Exception as e:
-        print(f"[MON-Processor] Excepción enviando a WS Server: {e}")
-
-def callback(ch, method, properties, body):
-    evento = json.loads(body.decode("utf-8"))
-    alerta = clasificar_alerta(evento)
-    print(f"[PROCESADO] {alerta}")
-    enviar_a_ws(alerta)
-    ch.basic_ack(delivery_tag=method.delivery_tag) #notifica al rabbitMQ
-
-def main():  #configura conexion con el rabbitMQ
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST))
-    channel = connection.channel()
-    channel.queue_declare(queue=QUEUE_NAME, durable=True)
-
-    print("[MON-Processor] Esperando mensajes... Ctrl+C para salir")
-    channel.basic_qos(prefetch_count=1)
-    channel.basic_consume(queue=QUEUE_NAME, on_message_callback=callback)
-
-    try:
-        channel.start_consuming()
-    except KeyboardInterrupt:
-        print("\nSaliendo procesador...")
-    finally:
-        connection.close()
+async def main():
+    server = await websockets.serve(start_node_b_server, NODE_B_HOST, NODE_B_PORT)
+    print(f"Node B WebSocket Server listening on ws://{NODE_B_HOST}:{NODE_B_PORT}")
+    await asyncio.Future()  # Run forever
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
